@@ -44,6 +44,7 @@ final class GenerativeModel {
   final List<SafetySetting> _safetySettings;
   final GenerationConfig? _generationConfig;
   final ApiClient _client;
+  final Cache _cache = Cache();
 
   /// Create a [GenerativeModel] backed by the generative model named [model].
   ///
@@ -124,7 +125,7 @@ final class GenerativeModel {
     final response =
         await _client.makeRequest(_taskUri(Task.generateContent), parameters);
     try {
-      return parseGenerateContentResponse(response);
+      return parseGenerateContentResponse(response, _cache);
     } on FormatException {
       if (response case {'error': final Object error}) {
         throw parseError(error);
@@ -160,7 +161,7 @@ final class GenerativeModel {
     };
     final response =
         _client.streamRequest(_taskUri(Task.streamGenerateContent), parameters);
-    return response.map(parseGenerateContentResponse);
+    return response.map((r) => parseGenerateContentResponse(r, _cache));
   }
 
   /// Counts the total number of tokens in [contents].

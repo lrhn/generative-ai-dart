@@ -148,13 +148,21 @@ final class Candidate {
 /// safety across a number of harm categories and the probability of the harm
 /// classification is included here.
 final class SafetyRating {
+  static final _cache = List<SafetyRating?>.filled(
+      HarmCategory.values.length * HarmProbability.values.length, null);
+
   /// The category for this rating.
   final HarmCategory category;
 
   /// The probability of harm for this content.
   final HarmProbability probability;
 
-  SafetyRating(this.category, this.probability);
+  SafetyRating._(this.category, this.probability);
+
+  factory SafetyRating(HarmCategory category, HarmProbability probability) {
+    return _cache[category.index * HarmProbability.values.length +
+        probability.index] ??= SafetyRating._(category, probability);
+  }
 }
 
 /// The reason why a prompt was blocked.
@@ -293,16 +301,28 @@ enum FinishReason {
 /// Passing a safety setting for a category changes the allowed probability that
 /// content is blocked.
 final class SafetySetting {
+  static final List<SafetySetting?> _cache = List<SafetySetting?>.filled(
+      HarmCategory.values.length * HarmBlockThreshold.values.length, null);
+
   /// The category for this setting.
   final HarmCategory category;
 
   /// Controls the probability threshold at which harm is blocked.
   final HarmBlockThreshold threshold;
 
-  SafetySetting(this.category, this.threshold);
+  final Object _json;
 
-  Object toJson() =>
-      {'category': category.toJson(), 'threshold': threshold.toJson()};
+  SafetySetting._(this.category, this.threshold)
+      : _json = {
+          'category': category._jsonString,
+          'threshold': threshold._jsonString
+        };
+
+  factory SafetySetting(HarmCategory category, HarmBlockThreshold threshold) =>
+      _cache[category.index * HarmBlockThreshold.values.length +
+          threshold.index] ??= SafetySetting._(category, threshold);
+
+  Object toJson() => _json;
 }
 
 enum HarmBlockThreshold {
@@ -422,10 +442,11 @@ enum TaskType {
   Object toJson() => _jsonString;
 }
 
-GenerateContentResponse parseGenerateContentResponse(Object jsonObject) {
+GenerateContentResponse parseGenerateContentResponse(
+    Object jsonObject, Cache cache) {
   return switch (jsonObject) {
     {'candidates': final List<Object?> candidates} => GenerateContentResponse(
-        candidates.map(_parseCandidate).toList(),
+        candidates.map((map) => _parseCandidate(map, cache)).toList(),
         switch (jsonObject) {
           {'promptFeedback': final Map promptFeedback} =>
             _parsePromptFeedback(promptFeedback),
@@ -455,13 +476,13 @@ EmbedContentResponse parseEmbedContentResponse(Object jsonObject) {
   };
 }
 
-Candidate _parseCandidate(Object? jsonObject) {
+Candidate _parseCandidate(Object? jsonObject, Cache cache) {
   return switch (jsonObject) {
     {
       'content': final Object content,
     } =>
       Candidate(
-          parseContent(content),
+          parseContent(content, cache),
           switch (jsonObject) {
             {'safetyRatings': final List<Object?> safetyRatings} =>
               safetyRatings.map(_parseSafetyRating).toList(),

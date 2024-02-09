@@ -16,6 +16,7 @@ import 'dart:convert';
 
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:google_generative_ai/src/api.dart';
+import 'package:google_generative_ai/src/content.dart';
 import 'package:test/test.dart';
 
 import 'utils/matchers.dart';
@@ -55,7 +56,7 @@ void main() {
 ''';
       final decoded = jsonDecode(response) as Object;
       expect(
-          () => parseGenerateContentResponse(decoded),
+          () => parseGenerateContentResponse(decoded, Cache()),
           throwsA(isA<FormatException>().having((e) => e.message, 'message',
               startsWith('Unhandled Content format'))));
     });
@@ -87,7 +88,8 @@ void main() {
 }
 ''';
       final decoded = jsonDecode(response) as Object;
-      final generateContentResponse = parseGenerateContentResponse(decoded);
+      final generateContentResponse =
+          parseGenerateContentResponse(decoded, Cache());
       expect(
           generateContentResponse,
           matchesGenerateContentResponse(GenerateContentResponse(
@@ -167,7 +169,8 @@ void main() {
 }
 ''';
       final decoded = jsonDecode(response) as Object;
-      final generateContentResponse = parseGenerateContentResponse(decoded);
+      final generateContentResponse =
+          parseGenerateContentResponse(decoded, Cache());
       expect(
           generateContentResponse,
           matchesGenerateContentResponse(GenerateContentResponse(
@@ -275,7 +278,8 @@ void main() {
 }
 ''';
       final decoded = jsonDecode(response) as Object;
-      final generateContentResponse = parseGenerateContentResponse(decoded);
+      final generateContentResponse =
+          parseGenerateContentResponse(decoded, Cache());
       expect(
           generateContentResponse,
           matchesGenerateContentResponse(GenerateContentResponse(
